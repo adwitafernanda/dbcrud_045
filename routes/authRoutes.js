@@ -20,7 +20,8 @@ router.post('/signup', (req, res) => {
 // Route untuk menampilkan form signup
 router.get('/signup', (req, res) => {
     res.render('signup', {
-        layout: 'layouts/main-layout'
+        layout: 'layouts/main-layout',
+        page: 'signup'
     });
 });
 
@@ -46,7 +47,8 @@ router.post('/login', (req, res) => {
 // Route untuk menampilkan form login
 router.get('/login', (req, res) => {
     res.render('login', {
-        layout: 'layouts/main-layout'
+        layout: 'layouts/main-layout',
+        page: 'login'
     });
 });
 

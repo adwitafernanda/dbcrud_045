@@ -1,30 +1,26 @@
 <div class="container mt-5">
-    <h1 class="text-center">Todo List</h1>
+    <h1 class="todo text-center mb-10">Todo List</h1>
 
-    <!-- Form to Add New Todo -->
-    <form id="addTodoForm" class="my-4">
-        <div class="input-group">
-            <input type="text" id="newTask" class="form-control" placeholder="Add a new task..." required>
-            <div class="input-group-append">
-                <button type="submit" class="btn btn-primary">Add Task</button>
-            </div>
-        </div>
-    </form>
+    <!-- Button to Add New Todo -->
+    <div class="text-center mb-10">
+        <button id="addTaskBtn" class="btn btn-primary btn-lg">Add Todo</button>
+    </div>
 
     <!-- List of Todos -->
-    <ul id="todoList" class="list-group">
-        <% todos.forEach(todo=> { %>
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                <span class="<%= todo.completed ? 'completed' : '' %>">
-                    <%= todo.task %>
-                </span>
-                <div>
-                    <button class="btn btn-sm btn-success mr-2 editBtn" data-id="<%= todo.id %>">Edit</button>
-                    <button class="btn btn-sm btn-danger deleteBtn" data-id="<%= todo.id %>">Delete</button>
+    <div id="todoList" class="row">
+        <% todos.forEach(todo => { %>
+            <div class="col-md-4 mb-10">
+                <div class="card text-center shadow todo-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Todo</h5>
+                        <p class="card-text"><%= todo.task %></p>
+                        <button class="btn btn-success mr-2 editBtn" data-id="<%= todo.id %>">Edit</button>
+                        <button class="btn btn-danger deleteBtn" data-id="<%= todo.id %>">Delete</button>
+                    </div>
                 </div>
-            </li>
-            <% }); %>
-    </ul>
+            </div>
+        <% }); %>
+    </div>
 
     <!-- Edit Todo Modal -->
     <div id="editModal" class="modal fade" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
@@ -49,45 +45,75 @@
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     $(document).ready(function () {
-        // Add new todo
-        $('#addTodoForm').on('submit', function (e) {
-            e.preventDefault();
-            const task = $('#newTask').val().trim();
-            if (task) {
-                $.ajax({
-                    url: '/todos',
-                    type: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify({ task: task }),
-                    success: function (newTodo) {
-                        location.reload(); // Reload to show the new todo
-                    },
-                    error: function (error) {
-                        console.error("Error adding task:", error.responseText);
+        // Add new todo using SweetAlert
+        $('#addTaskBtn').on('click', function () {
+            Swal.fire({
+                title: 'Add New Task',
+                input: 'text',
+                inputPlaceholder: 'Enter your task...',
+                showCancelButton: true,
+                confirmButtonText: 'Add',
+                cancelButtonText: 'Cancel',
+                inputValidator: (value) => {
+                    if (!value) {
+                        return 'You need to write something!';
                     }
-                });
-            }
-        });
-
-        // Delete a todo
-        $('.deleteBtn').on('click', function () {
-            const id = $(this).data('id');
-            $.ajax({
-                url: '/todos/' + id,
-                type: 'DELETE',
-                success: function () {
-                    location.reload(); // Reload to show updated list
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const task = result.value;
+                    $.ajax({
+                        url: '/todos',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ task: task }),
+                        success: function (newTodo) {
+                            $('#todoList').append(`
+                                <div class="col-md-4 mb-4">
+                                    <div class="card text-center shadow todo-card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">Todo</h5>
+                                            <p class="card-text">${newTodo.task}</p>
+                                            <button class="btn btn-success mr-2 editBtn" data-id="${newTodo.id}">Edit</button>
+                                            <button class="btn btn-danger deleteBtn" data-id="${newTodo.id}">Delete</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `);
+                            Swal.fire('Added!', 'Your task has been added.', 'success');
+                        },
+                        error: function (error) {
+                            console.error("Error adding task:", error.responseText);
+                        }
+                    });
                 }
             });
         });
 
+        // Delete a todo
+        $(document).on('click', '.deleteBtn', function () {
+    const id = $(this).data('id'); // Get the id from data attribute
+    $.ajax({
+        url: '/todos/' + id,
+        type: 'DELETE',
+        success: function () {
+            $(this).closest('.col-md-4').remove(); // Remove the card from UI
+        }.bind(this), // Bind the context to ensure `this` refers to the button
+        error: function (error) {
+            console.error("Error deleting task:", error);
+        }
+    });
+});
+
+
         // Show edit modal with the current task
         let editId;
-        $('.editBtn').on('click', function () {
+        $(document).on('click', '.editBtn', function () {
             editId = $(this).data('id');
-            const currentTask = $(this).closest('li').find('span').text();
+            const currentTask = $(this).closest('.card-body').find('.card-text').text();
             $('#editTask').val(currentTask);
             $('#editModal').modal('show');
         });
